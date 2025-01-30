@@ -1,0 +1,1 @@
+export const BackendBaseUrl="https://fastapi.labmise.com"
