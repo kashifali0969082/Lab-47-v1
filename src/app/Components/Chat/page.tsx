@@ -34,6 +34,7 @@ export default function DashboardPage({ modelData }: props) {
       <main className="flex-1">
         <ChatInterface
           model={models}
+          modelData={modelData}
           sidebarCollapsed={isSidebarCollapsed}
           conversationID={SingleChatID}
         />

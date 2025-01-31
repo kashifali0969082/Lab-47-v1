@@ -19,19 +19,32 @@ interface Message {
   content: string;
   role: "user" | "assistant";
 }
+interface ModelDataItem {
+  model_id: string;
+  model_name: string;
+}
 interface ChatInterfaceProps {
   sidebarCollapsed: boolean;
   conversationID: string;
-  model?:string;
+  model?: any;
+  modelData:Array<ModelDataItem>
   // NewChat: boolean;
 }
-const ChatInterface: React.FC<ChatInterfaceProps> = ({ conversationID,model }) => {
+const ChatInterface: React.FC<ChatInterfaceProps> = ({
+  conversationID,
+  modelData,
+  model,
+}) => {
   const [chat, setChat] = useState(true);
-  const [input, setInput] = useState("");
+  const [input, setInput] = useState<string>("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [messages, setmessages] = useState<Message[]>([]);
+  const [mentionAdded, setMentionAdded] = useState<boolean>(false);
   const [Blocked, setBlocked] = useState(false);
   const [converationID, setConversationID] = useState("");
+  const [showData, setShowData] = useState<boolean>(false);
+console.log("MODEL",model);
+
   // const [models, setmodels] = useState("44444444-4444-4444-4444-444444444444");
 
   const scrollToBottom = () => {
@@ -55,7 +68,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ conversationID,model }) =
         const { data } = await createMessage({
           conversation_id: converationID,
           content: input,
-          model_id: model!
+          model_id: model!,
         });
         return data[1].content;
       } else {
@@ -109,11 +122,23 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ conversationID,model }) =
       let { data } = await GetSpecificChat(id);
       setChat(false);
       setmessages(data.messages);
-      console.log("setting messages here",data);
+      console.log("setting messages here", data);
     } catch (error) {
       console.log("error while fetching specific chat");
     }
   };
+  const handleChange = (value: any) => {
+    setInput(value);
+    const checkAt = /^[\s]*@/;
+    if (checkAt.test(value)) {
+      setShowData(true);
+      console.log("good");
+    } else {
+      // Set to false if it doesn't meet the condition
+      setShowData(false);
+    }
+  };
+
   const header = (
     <div className="flex flex-col items-center justify-center h-full max-w-2xl mx-auto px-4">
       <h1 className="text-2xl font-semibold mb-3 bg-gradient-to-r from-indigo-500 to-purple-600 bg-clip-text text-transparent">
@@ -213,7 +238,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ conversationID,model }) =
                 </p>
               </div>
             </div>
-            {messages.map((message,index) => (
+            {messages.map((message, index) => (
               <div
                 key={index}
                 className={cn(
@@ -260,13 +285,26 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ conversationID,model }) =
       </div>
       {chat === false ? (
         <div className="mx-6 mb-6">
+          {showData && (
+            <div className="text-gray-600" >
+             {modelData.map((item:any) => (
+              <li
+                key={item.model_id}
+                // onClick={() => handleSelect(item)}
+                className="px-4 py-2 hover:bg-gray-200 dark:hover:bg-gray-600 cursor-pointer"
+              >
+                {item.model_name}
+              </li>
+            ))}
+            </div>
+          )}
           <form
             onSubmit={handlesubmit}
             className="relative flex items-center rounded-xl border bg-white px-3 py-1.5 pr-8 text-sm focus-within:ring-1 focus-within:ring-blue-200"
           >
             <AutoResizeTextarea
               value={input}
-              onChange={setInput}
+              onChange={handleChange}
               onKeyDown={handleKeyDown}
               disabled={Blocked}
               placeholder="Type your message..."

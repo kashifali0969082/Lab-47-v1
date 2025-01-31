@@ -11,9 +11,10 @@ const MentionTextarea: React.FC = () => {
   const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
   const [showDropdown, setShowDropdown] = useState<boolean>(false);
   const [mentionStart, setMentionStart] = useState<number | null>(null);
+  const [mentionAdded, setMentionAdded] = useState<boolean>(false);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
 
-  // Sample User List
+  // Sample Users List
   const users: User[] = [
     { id: 1, name: "Alice" },
     { id: 2, name: "Bob" },
@@ -25,19 +26,20 @@ const MentionTextarea: React.FC = () => {
   // Handle Text Change
   const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const newText = e.target.value;
-    setText(newText);
+    setText(newText); //input value
+
+    // Allow mention only at the beginning and if not already added
+    if (mentionAdded) return;
 
     const cursorPos = e.target.selectionStart;
     const beforeCursor = newText.substring(0, cursorPos);
-    const words = beforeCursor.split(/\s+/);
-    const lastWord = words[words.length - 1];
 
-    // Detect @ mention only at the beginning or after spaces
-    if (lastWord.startsWith("@") && lastWord.length > 1) {
-      const query = lastWord.slice(1).toLowerCase();
+    // Check if the mention is at the start or after spaces
+    if (/^\s*@\w*$/.test(beforeCursor)) {
+      const query = beforeCursor.slice(1).toLowerCase();
       setFilteredUsers(users.filter((user) => user.name.toLowerCase().includes(query)));
       setShowDropdown(true);
-      setMentionStart(cursorPos - lastWord.length);
+      setMentionStart(cursorPos - beforeCursor.length);
     } else {
       setShowDropdown(false);
       setMentionStart(null);
@@ -51,8 +53,10 @@ const MentionTextarea: React.FC = () => {
     const beforeMention = text.substring(0, mentionStart);
     const afterMention = text.substring(textareaRef.current.selectionStart);
     const newText = `${beforeMention}@${user.name} ${afterMention}`;
+    
     setText(newText);
     setShowDropdown(false);
+    setMentionAdded(true); // Prevents multiple mentions
 
     setTimeout(() => {
       if (textareaRef.current) {
@@ -64,6 +68,7 @@ const MentionTextarea: React.FC = () => {
 
   return (
     <div style={{ position: "relative", width: "400px" }}>
+      {/* Textarea */}
       <textarea
         ref={textareaRef}
         value={text}
@@ -77,10 +82,38 @@ const MentionTextarea: React.FC = () => {
           border: "1px solid #ccc",
           fontSize: "16px",
           outline: "none",
-          color:'black'
+          whiteSpace: "pre-wrap",
         }}
       />
 
+      {/* Display text with mention styling */}
+      <div
+        style={{
+          position: "absolute",
+          top: 0,
+          left: 0,
+          width: "100%",
+          height: "100%",
+          padding: "10px",
+          fontSize: "16px",
+          pointerEvents: "none",
+          whiteSpace: "pre-wrap",
+          color: "transparent",
+          overflow: "hidden",
+        }}
+      >
+        {text.split(" ").map((word, index) =>
+          word.startsWith("@") && index === 0 ? (
+            <span key={index} style={{ color: "red", fontWeight: "bold" }}>
+              {word}{" "}
+            </span>
+          ) : (
+            <span key={index}>{word} </span>
+          )
+        )}
+      </div>
+
+      {/* Dropdown for user mentions */}
       {showDropdown && filteredUsers.length > 0 && (
         <ul
           style={{
