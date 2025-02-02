@@ -14,6 +14,10 @@ import { createNewChat } from "../../../../API-struct/Api";
 import { MarkdownRenderer } from "../Chunks/markdown-render";
 import { createMessage } from "../../../../API-struct/Api";
 import { GetSpecificChat } from "../../../../API-struct/Api";
+type ModelType = {
+  model_name: string;
+  model_id: string;
+};
 interface Message {
   id: number;
   content: string;
@@ -27,24 +31,50 @@ interface ChatInterfaceProps {
   sidebarCollapsed: boolean;
   conversationID: string;
   model?: any;
-  modelData:Array<ModelDataItem>
+  modelData: Array<ModelDataItem>;
+  toggle: any;
+  togsetter:any
   // NewChat: boolean;
 }
 const ChatInterface: React.FC<ChatInterfaceProps> = ({
   conversationID,
   modelData,
   model,
+  toggle,
+  togsetter
 }) => {
   const [chat, setChat] = useState(true);
-  const [input, setInput] = useState<string>("");
+  const [input, setInput] = useState<any>("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [messages, setmessages] = useState<Message[]>([]);
-  const [mentionAdded, setMentionAdded] = useState<boolean>(false);
+  const [selectedModel, setSelectedModel] = useState<string>("");
+  const [selectedModelName, setSelectedModelName] = useState<string>("");
   const [Blocked, setBlocked] = useState(false);
+  const [Check, setCheck] = useState(true);
   const [converationID, setConversationID] = useState("");
   const [showData, setShowData] = useState<boolean>(false);
-console.log("MODEL",model);
-
+  console.log("toggle",toggle);
+  
+  useEffect(() => {
+    setSelectedModel(model);
+  }, [model]);
+  useEffect(() => {
+    const nchat=()=>{
+      if(toggle){
+      setBlocked(false);
+      setChat(false);
+      setInput("");
+      setmessages([]);
+      setSelectedModelName("");
+      setCheck(true);
+      setConversationID("");
+      setShowData(false);
+      togsetter()
+      }
+    }
+    nchat()
+    
+  }, [toggle]);
   // const [models, setmodels] = useState("44444444-4444-4444-4444-444444444444");
 
   const scrollToBottom = () => {
@@ -65,20 +95,54 @@ console.log("MODEL",model);
   const creatChat = async () => {
     try {
       if (converationID) {
-        const { data } = await createMessage({
-          conversation_id: converationID,
-          content: input,
-          model_id: model!,
-        });
-        return data[1].content;
+        if (input.startsWith("@")) {
+          console.log("in if condition");
+
+          let didgit = selectedModelName.length;
+          let text = input.slice(didgit + 1);
+
+          const { data } = await createMessage({
+            conversation_id: converationID,
+            content: text,
+            model_id: selectedModel!,
+          });
+          setCheck(true);
+          return data[1].content;
+        } else {
+          console.log("in else condition");
+
+          const { data } = await createMessage({
+            conversation_id: converationID,
+            content: input,
+            model_id: selectedModel!,
+          });
+          // setCheck(true)
+          return data[1].content;
+        }
       } else {
-        const { data } = await createNewChat({
-          user_id: "11111111-1111-1111-1111-111111111111",
-          model_id: model!,
-          initial_message: input,
-        });
-        setConversationID(data.conversation_id);
-        return data.messages[1].content;
+        if (input.startsWith("@")) {
+          console.log("in if condition");
+
+          let didgit = selectedModelName.length;
+          let text = input.slice(didgit + 1);
+          const { data } = await createNewChat({
+            user_id: "11111111-1111-1111-1111-111111111111",
+            model_id: selectedModel!,
+            initial_message: text,
+          });
+          setConversationID(data.conversation_id);
+          setCheck(true);
+          return data.messages[1].content;
+        } else {
+          const { data } = await createNewChat({
+            user_id: "11111111-1111-1111-1111-111111111111",
+            model_id: selectedModel!,
+            initial_message: input,
+          });
+          setConversationID(data.conversation_id);
+          // setCheck(false)
+          return data.messages[1].content;
+        }
       }
     } catch (error) {
       console.error("error while Creating a chat", error);
@@ -127,14 +191,29 @@ console.log("MODEL",model);
       console.log("error while fetching specific chat");
     }
   };
+  //---------------------------------------------------------------------------------------------------Adding @ functionality
+  const handleSelect = (val: ModelType) => {
+    setShowData(false);
+    setInput(`@${val.model_name}`);
+    setSelectedModel(val.model_id);
+    setSelectedModelName(val.model_name);
+    setCheck(false);
+  };
   const handleChange = (value: any) => {
     setInput(value);
+    if (value === "") {
+      setSelectedModelName("");
+      setCheck(true);
+    }
     const checkAt = /^[\s]*@/;
-    if (checkAt.test(value)) {
-      setShowData(true);
-      console.log("good");
+    if (Check) {
+      if (checkAt.test(value)) {
+        setShowData(true);
+        console.log("good");
+      } else {
+        setShowData(false);
+      }
     } else {
-      // Set to false if it doesn't meet the condition
       setShowData(false);
     }
   };
@@ -283,48 +362,53 @@ console.log("MODEL",model);
           </>
         )}
       </div>
-      {chat === false ? (
-        <div className="mx-6 mb-6">
-          {showData && (
-            <div className="text-gray-600" >
-             {modelData.map((item:any) => (
-              <li
-                key={item.model_id}
-                // onClick={() => handleSelect(item)}
-                className="px-4 py-2 hover:bg-gray-200 dark:hover:bg-gray-600 cursor-pointer"
+      <div className="relative">
+        {chat === false ? (
+          <div className="mx-6 mb-6 ">
+            {showData && (
+              <div
+                className="text-gray-600 bg-zinc-300 w-fit rounded-md absolute "
+                style={{ bottom: "89.8px" }}
               >
-                {item.model_name}
-              </li>
-            ))}
-            </div>
-          )}
-          <form
-            onSubmit={handlesubmit}
-            className="relative flex items-center rounded-xl border bg-white px-3 py-1.5 pr-8 text-sm focus-within:ring-1 focus-within:ring-blue-200"
-          >
-            <AutoResizeTextarea
-              value={input}
-              onChange={handleChange}
-              onKeyDown={handleKeyDown}
-              disabled={Blocked}
-              placeholder="Type your message..."
-              className="flex-1 bg-transparent py-1.5 focus-visible:outline-none focus:ring-0 border-none"
-            />
-            <button
-              type="submit"
-              disabled={Blocked}
-              className="absolute bottom-2 right-2 rounded-full p-1 text-gray-400 hover:text-gray-600"
+                {modelData.map((item: any) => (
+                  <li
+                    key={item.model_id}
+                    onClick={() => handleSelect(item)}
+                    className="px-4 py-2 hover:bg-gray-200 dark:hover:bg-gray-300 cursor-pointer"
+                  >
+                    {item.model_name}
+                  </li>
+                ))}
+              </div>
+            )}
+            <form
+              onSubmit={handlesubmit}
+              className="relative flex items-center rounded-xl border bg-white px-3 py-1.5 pr-8 text-sm focus-within:ring-1 focus-within:ring-blue-200"
             >
-              <ArrowUpIcon size={18} />
-            </button>
-          </form>
-          <div className="text-xs text-gray-600 text-center pt-2">
-            AI can make mistakes. Consider checking important information.
+              <AutoResizeTextarea
+                value={input}
+                onChange={handleChange}
+                onKeyDown={handleKeyDown}
+                disabled={Blocked}
+                placeholder="Type your message..."
+                className="flex-1 bg-transparent py-1.5 focus-visible:outline-none focus:ring-0 border-none"
+              />
+              <button
+                type="submit"
+                disabled={Blocked}
+                className="absolute bottom-2 right-2 rounded-full p-1 text-gray-400 hover:text-gray-600"
+              >
+                <ArrowUpIcon size={18} />
+              </button>
+            </form>
+            <div className="text-xs text-gray-600 text-center pt-2">
+              AI can make mistakes. Consider checking important information.
+            </div>
           </div>
-        </div>
-      ) : (
-        <></>
-      )}
+        ) : (
+          <></>
+        )}
+      </div>
     </main>
   );
 };

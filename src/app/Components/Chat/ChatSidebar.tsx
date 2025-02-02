@@ -29,6 +29,7 @@ interface ChatSidebarProps {
   onSingleID: (chatID: string) => void;
   selectedModel: (model: string) => void;
   modelData: Array<ModelDataItem>;
+  Toggle:any
 }
 
 interface ChatItem {
@@ -42,6 +43,7 @@ export default function ChatSidebar({
   onSingleID,
   selectedModel,
   modelData,
+  Toggle
 }: ChatSidebarProps) {
   const [Titles, setTitles] = useState<ChatItem[]>([]);
   const [Limit, SetLimit] = useState<number>(20);
@@ -50,7 +52,6 @@ export default function ChatSidebar({
   const [editingChatId, setEditingChatId] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState("");
   const [Model, SetModel] = useState("");
-  const [totalTitles, setTotalTitles] = useState();
   const [hasMoreData, setHasMoreData] = useState(true);
 
   const handleDelete = async (conversationId: string) => {
@@ -64,59 +65,6 @@ export default function ChatSidebar({
       alert("Failed to delete chat. Please try again.");
     }
   };
-  // Pagination
-  // const GettingChats = async () => {
-  //   try {
-  //     setIsFetching(true);
-  //     const { data } = await getAllChats(
-  //       "11111111-1111-1111-1111-111111111111",
-  //       Limit,
-  //       OffSet
-  //     );
-  //     setTotalTitles(data.total_count);
-
-  //     if (data.conversations.length < 20) {
-  //       console.log("Last data has been fetched");
-  //     }
-  //     setTitles((prevTitles) => {
-  //       const newTitles = data.conversations.filter(
-  //         (newItem: any) =>
-  //           !prevTitles.some(
-  //             (prevItem) => prevItem.conversation_id === newItem.conversation_id
-  //           )
-  //       );
-  //       return [...prevTitles, ...newTitles];
-  //     });
-  //   } catch (error) {
-  //     console.error("Error fetching chats:", error);
-  //   } finally {
-  //     setIsFetching(false);
-  //   }
-  // };
-  // useEffect(() => {
-  //   const chatContainer = document.querySelector(".chat");
-
-  //   const handleScroll = () => {
-  //     if (!isFetching && chatContainer) {
-  //       const isBottom =
-  //         chatContainer.scrollTop + chatContainer.clientHeight >=
-  //         chatContainer.scrollHeight;
-  //       if (isBottom) {
-  //         SetLimit((prevLimit) => prevLimit + 20);
-  //         SetOffSet((prevOffSet) => prevOffSet + 20);
-  //       }
-  //     }
-  //   };
-
-  //   chatContainer?.addEventListener("scroll", handleScroll);
-
-  //   return () => {
-  //     chatContainer?.removeEventListener("scroll", handleScroll);
-  //   };
-  // }, [isFetching]);
-  // useEffect(() => {
-  //   GettingChats(); // Initial load
-  // }, [Limit, OffSet]);
   const GettingChats = async () => {
     try {
       setIsFetching(true);
@@ -125,7 +73,7 @@ export default function ChatSidebar({
         Limit,
         OffSet
       );
-      setTotalTitles(data.total_count);
+      // setTotalTitles(data.total_count);
       console.log(data);
       
   
@@ -220,6 +168,20 @@ export default function ChatSidebar({
   useEffect(() => {
     selectedModel(Model);
   }, [Model]);
+  const createNewChatItem = () => {
+    const newChatItem: ChatItem = {
+      conversation_id: `${Date.now()}`, // Generate unique id based on current timestamp
+      title: "new chat" // Set title as "new chat"
+    };
+    // Add new chat item to the state
+    setTitles((prevTitles) => [newChatItem,...prevTitles]);
+  };
+  const NewChatFun=()=>{
+    Toggle()
+    createNewChatItem()
+  }
+  console.log(Titles);
+  
   return (
     <aside
       className={`relative border-r bg-white transition-all duration-300 flex flex-col h-screen ${
@@ -252,7 +214,7 @@ export default function ChatSidebar({
         </div>
         <div>
           <button
-            // onClick={onChatOpen}
+            onClick={NewChatFun}
             className="flex w-full items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-indigo-600 to-purple-600 p-2 text-sm text-white hover:from-indigo-700 hover:to-purple-700 transition-all duration-200"
           >
             <PlusIcon size={16} />
